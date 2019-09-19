@@ -66,13 +66,7 @@ func main() {
 			continue
 		}
 
-		fpath := s.Name()
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-
-		file, err := os.Open(fpath)
+		file, err := os.Open(s.Name())
 		if err != nil {
 			log.Println(err)
 			continue
