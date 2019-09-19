@@ -48,16 +48,6 @@ func sums(f *os.File) {
 	fmt.Printf("SHA-256: %X\n\n", sha256.Sum(nil))
 }
 
-func printFilehash(filepath string) {
-	f, err := os.Open(filepath)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer f.Close()
-	sums(f)
-}
-
 func main() {
 	path, err := getArgs()
 	checkErrf(err)
@@ -73,11 +63,28 @@ func main() {
 	names, err := f.Readdir(0)
 	checkErrl(err)
 
+	err = os.Chdir(path)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	for _, s := range names {
 		if s.IsDir() {
 			continue
 		}
-		filepath := path + string(os.PathSeparator) + s.Name()
-		printFilehash(filepath)
+
+		fpath, err := filepath.Abs(s.Name())
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		file, err := os.Open(fpath)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		sums(file)
+		file.Close()
 	}
 }
