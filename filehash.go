@@ -18,12 +18,6 @@ func checkErrf(e error) {
 	}
 }
 
-func checkErrl(e error) {
-	if e != nil {
-		log.Println(e)
-	}
-}
-
 func getArgs() (arg string, err error) {
 	if len(os.Args) == 1 {
 		err = errors.New("cannot find command argument")
@@ -59,14 +53,13 @@ func main() {
 	if s, _ := f.Stat(); !s.IsDir() {
 		sums(f)
 		return
-	}
-	names, err := f.Readdir(0)
-	checkErrl(err)
 
-	err = os.Chdir(path)
-	if err != nil {
-		log.Fatalln(err)
 	}
+	err = os.Chdir(path)
+	checkErrf(err)
+
+	names, err := f.Readdir(0)
+	checkErrf(err)
 
 	for _, s := range names {
 		if s.IsDir() {
