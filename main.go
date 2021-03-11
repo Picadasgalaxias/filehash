@@ -4,27 +4,16 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 )
 
-func checkErrf(e error) {
+func checkErrfatal(e error) {
 	if e != nil {
 		log.Fatalln(e)
 	}
-}
-
-func getArgs() (arg string, err error) {
-	if len(os.Args) == 1 {
-		err = errors.New("cannot find command argument")
-	} else {
-		arg, err = filepath.Abs(os.Args[1])
-	}
-	return
 }
 
 func sums(f *os.File) {
@@ -36,42 +25,46 @@ func sums(f *os.File) {
 		log.Println(err)
 		return
 	}
-	fmt.Printf("File: %s\n", f.Name())
-	fmt.Printf("MD5: %X\n", md5.Sum(nil))
-	fmt.Printf("SHA-1: %X\n", sha1.Sum(nil))
-	fmt.Printf("SHA-256: %X\n\n", sha256.Sum(nil))
+	fmt.Printf("File: %s\nMD5: %x\nSHA-1: %x\nSHA-256: %x\n\n",
+		f.Name(), md5.Sum(nil), sha1.Sum(nil), sha256.Sum(nil))
 }
 
 func main() {
-	path, err := getArgs()
-	checkErrf(err)
-
-	f, err := os.Open(path)
-	checkErrf(err)
-	defer f.Close()
-
-	if s, _ := f.Stat(); !s.IsDir() {
-		sums(f)
+	if len(os.Args) < 2 {
+		log.Fatalln("not enough arguments, accept files or directories")
 		return
-
 	}
-	err = os.Chdir(path)
-	checkErrf(err)
+	for _, path := range os.Args[1:] {
+		func() {
+			file, err := os.Open(path)
+			checkErrfatal(err)
+			defer file.Close()
 
-	names, err := f.Readdir(0)
-	checkErrf(err)
+			if s, _ := file.Stat(); !s.IsDir() {
+				sums(file)
+				return
 
-	for _, s := range names {
-		if s.IsDir() {
-			continue
-		}
+			}
 
-		file, err := os.Open(s.Name())
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		sums(file)
-		file.Close()
+			err = os.Chdir(path)
+			checkErrfatal(err)
+
+			names, err := file.Readdir(0)
+			checkErrfatal(err)
+
+			for _, s := range names {
+				if s.IsDir() {
+					continue
+				}
+
+				file, err := os.Open(s.Name())
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				sums(file)
+				file.Close()
+			}
+		}()
 	}
 }
