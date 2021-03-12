@@ -10,12 +10,6 @@ import (
 	"os"
 )
 
-func checkErrfatal(e error) {
-	if e != nil {
-		log.Fatalln(e)
-	}
-}
-
 func sums(f *os.File) {
 	md5 := md5.New()
 	sha1 := sha1.New()
@@ -25,32 +19,40 @@ func sums(f *os.File) {
 		log.Println(err)
 		return
 	}
-	fmt.Printf("File: %s\nMD5: %x\nSHA-1: %x\nSHA-256: %x\n\n",
+	fmt.Printf("%s\nMD5: %x\nSHA-1: %x\nSHA-256: %x\n\n",
 		f.Name(), md5.Sum(nil), sha1.Sum(nil), sha256.Sum(nil))
 }
 
 func main() {
 	if len(os.Args) < 2 {
-		log.Fatalln("not enough arguments, accept files or directories")
-		return
+		fmt.Fprintln(os.Stderr, "not enough arguments, accepts files and directories")
+		os.Exit(1)
 	}
 	for _, path := range os.Args[1:] {
 		func() {
 			file, err := os.Open(path)
-			checkErrfatal(err)
+			if err != nil {
+				log.Println(err)
+				return
+			}
 			defer file.Close()
 
 			if s, _ := file.Stat(); !s.IsDir() {
 				sums(file)
 				return
-
 			}
 
 			err = os.Chdir(path)
-			checkErrfatal(err)
+			if err != nil {
+				log.Println(err)
+				return
+			}
 
 			names, err := file.Readdir(0)
-			checkErrfatal(err)
+			if err != nil {
+				log.Println(err)
+				return
+			}
 
 			for _, s := range names {
 				if s.IsDir() {
